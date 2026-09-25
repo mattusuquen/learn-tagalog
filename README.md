@@ -1,10 +1,10 @@
-# Learn Tagalog 🇵🇭
+# learn-tagalog 🇵🇭
 
-A voice-first AI tutor for learning conversational Tagalog. Tap the orb, speak (in English, Tagalog, or Taglish), and **Kuya Tutor** answers out loud, walking you through vocabulary, grammar, pronunciation, and cultural context one short exchange at a time.
+A voice-based Tagalog tutor that talks like your titita, not your textbook.
 
 Built with Next.js and an [ElevenLabs Conversational AI agent](https://elevenlabs.io/docs/conversational-ai/overview).
 
-## How it works
+## What makes this different
 
 ```
  🎙️ You speak
@@ -27,24 +27,23 @@ agent you configure in the ElevenLabs dashboard.
 
 The UI is a single chat column with an animated orb ([`thinking-orbs`](https://www.npmjs.com/package/thinking-orbs)) that reflects the live session: **searching** while connecting, **listening** while the agent waits for you, **solving** while the tutor speaks, and **breathing** when idle.
 
-## The tutor
+## How it works
 
 Kuya Tutor's behavior — its system prompt, LLM, and voice — is configured on the
 ElevenLabs agent, not in this repo. The prompt is designed to:
 
-- Teach everyday Manila Tagalog as it's actually spoken, including natural Taglish, and flag formal vs. casual usage
-- Give every new word with a pronunciation guide (stressed syllable in caps, e.g. *sa-LA-mat*), glottal-stop notes where meaning changes, and an English gloss
-- Introduce only 3–5 new words or one grammar point per session, covering markers (*ang/ng/sa*), verb focus and aspect, linkers, enclitics, and politeness (*po/opo*)
-- Follow a session structure: warm-up → spaced-repetition review → new material → practice → wrap-up
-- Correct mistakes by showing the fix first, then briefly explaining why, and nudge you to answer in Tagalog
+- A **persona/system prompt** defining tone, guardrails, and call-ending behavior (see below)
+- A **knowledge base** of vocabulary by CEFR level (A1–C2), grammar rules, conversation topics, and cultural notes, which the agent draws on to keep the conversation appropriately leveled
+- No separate exercise/quiz engine — assessment happens implicitly through the conversation itself
 
 Built-in commands you can say:
 
-| Command | What it does |
-| --- | --- |
-| `quiz me` | Runs a 5-question quiz on recent material |
-| `free talk` | Relaxed conversation in Tagalog, correcting only major errors |
-| `English please` | Switches explanations to English |
+- Content stays appropriate for learners of all ages
+- If a student gets frustrated, the tutor drops into encouragement mode and simplifies immediately
+
+### Ending a session
+
+The agent explicitly ends the call (rather than just saying bye) on any sign-off — "thanks bye," "I'm good," "no that's it," an explicit request to end, or "don't call again."
 
 ## Tech stack
 
@@ -53,9 +52,12 @@ Built-in commands you can say:
 - **Voice + agent:** ElevenLabs Conversational AI via `@elevenlabs/react` (`useConversation`)
 - **Audio:** browser WebRTC (mic capture and playback handled by the SDK)
 
-## Getting started
+- **Next.js / TypeScript** — app shell
+- **ElevenLabs** — voice pipeline (speech-to-text, text-to-speech, call orchestration)
+- LLM-driven persona/system prompt (the "unhinged tutor" character above) governs tone and pacing
+- Level-tagged vocabulary/grammar/culture knowledge base feeding the conversation
 
-### Prerequisites
+*(If this repo has moved on from any of the above, tell me and I'll fix it.)*
 
 - Node.js 20+
 - An [ElevenLabs account](https://elevenlabs.io/) with a Conversational AI agent, its **Agent ID**, and an **API key**
@@ -70,7 +72,9 @@ The app is wired for a **private** agent: the browser fetches a short-lived
 conversation token from `/api/token`, which uses your API key server-side. The
 key and agent ID stay on the server and are never exposed to the client.
 
-### Setup
+Early / actively iterating — recent work has focused on the call UI (push-to-talk, visual "thinking orb," dark theme) rather than the tutoring logic itself.
+
+## Getting started
 
 ```bash
 git clone https://github.com/mattusuquen/learn-tagalog.git
@@ -120,14 +124,13 @@ length, focus), swap the voice, or change the LLM — no code changes needed.
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
 
-## Roadmap
+## Roadmap ideas
 
-- [ ] Pronunciation scoring on spoken answers
-- [ ] Persist session history so spaced-repetition review carries across sessions
-- [ ] Show-translation toggle for tutor replies
-- [ ] Configurable student profile from the UI
+- [ ] Expand the vocabulary/grammar knowledge base across more CEFR levels
+- [ ] Persist learner profiles / spaced-repetition scheduling across sessions
+- [ ] More running bits 😄
 
-## Notes
+---
 
 - The transcript lives in the browser only; refreshing the page starts a new session.
 - The API key and agent ID stay server-side; the browser only receives a short-lived conversation token from `/api/token`.
