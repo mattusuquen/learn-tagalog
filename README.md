@@ -1,122 +1,70 @@
-# Learn Tagalog 🇵🇭
+# learn-tagalog 🇵🇭
 
-A voice-first AI tutor for learning conversational Tagalog. Tap the orb, speak (in English, Tagalog, or Taglish), and **Kuya Tutor** answers out loud, walking you through vocabulary, grammar, pronunciation, and cultural context one short exchange at a time.
+A voice-based Tagalog tutor that talks like your titita, not your textbook.
 
-Built with Next.js, LangGraph, OpenAI, and ElevenLabs.
+Call in, speak Tagalog, get roasted (affectionately) for your pronunciation, and actually get better. No flashcards, no multiple choice — the conversation *is* the lesson.
+
+## What makes this different
+
+Most language apps quiz you. This one **guilt-trips you like a real Filipino relative** while adapting to your level in real time.
+
+- **Taglish by default** — code-switches mid-sentence, because that's how Filipinos actually talk. Full Tagalog immersion the moment you can handle it, English dropped in only when needed for clarity.
+- **Roasts instead of scores** — you won't get "78% accuracy," you'll get something like *"that 'ng' sound was so American I could smell the ranch dressing."*
+- **Never actually mean** — the nagging only works because it's obviously on your side, same energy as Duolingo's owl but with more lola.
+- **Running bits** — recurring jokes about the words Filipinos know are brutal for foreigners (`ng`, `mga`, ...) so there's a reason to come back beyond "keep your streak."
+- **Adaptive difficulty** — the agent assesses your level through natural conversation (not a placement test) and adjusts on the fly. Gets easier fast if you're frustrated, harder if you're coasting.
+- **Vocab in context, not in isolation** — new words are introduced the way you'd actually encounter them ("you'll hear this a lot at the market"), 3–5 per session.
+- **Session summary** — every call ends with what you practiced, what's improving, and what to work on next.
 
 ## How it works
 
-```
- 🎙️ You speak
-   │
-   ▼
- /api/speech-to-text   → ElevenLabs Scribe transcribes your audio
-   │
-   ▼
- /api/chat             → LangGraph agent (gpt-4o-mini) replies as Kuya Tutor
-   │
-   ▼
- /api/text-to-speech   → ElevenLabs Flash v2.5 speaks the reply
-   │
-   ▼
- 🔊 You hear the answer (and see it in the transcript)
-```
+The tutor is a voice agent with:
 
-The UI is a single chat column with an animated orb ([`thinking-orbs`](https://www.npmjs.com/package/thinking-orbs)) that reflects what the app is doing: **listening** while recording, **searching** while transcribing, **solving** while the tutor thinks, and **breathing** when idle.
+- A **persona/system prompt** defining tone, guardrails, and call-ending behavior (see below)
+- A **knowledge base** of vocabulary by CEFR level (A1–C2), grammar rules, conversation topics, and cultural notes, which the agent draws on to keep the conversation appropriately leveled
+- No separate exercise/quiz engine — assessment happens implicitly through the conversation itself
 
-## The tutor
+### Guardrails
 
-Kuya Tutor's behavior lives in the system prompt in [`app/api/chat/route.ts`](app/api/chat/route.ts). It is designed to:
+- Content stays appropriate for learners of all ages
+- If a student gets frustrated, the tutor drops into encouragement mode and simplifies immediately
 
-- Teach everyday Manila Tagalog as it's actually spoken, including natural Taglish, and flag formal vs. casual usage
-- Give every new word with a pronunciation guide (stressed syllable in caps, e.g. *sa-LA-mat*), glottal-stop notes where meaning changes, and an English gloss
-- Introduce only 3–5 new words or one grammar point per session, covering markers (*ang/ng/sa*), verb focus and aspect, linkers, enclitics, and politeness (*po/opo*)
-- Follow a session structure: warm-up → spaced-repetition review → new material → practice → wrap-up
-- Correct mistakes by showing the fix first, then briefly explaining why, and nudge you to answer in Tagalog
+### Ending a session
 
-Built-in commands you can say or type:
-
-| Command | What it does |
-| --- | --- |
-| `quiz me` | Runs a 5-question quiz on recent material |
-| `free talk` | Relaxed conversation in Tagalog, correcting only major errors |
-| `English please` | Switches explanations to English |
+The agent explicitly ends the call (rather than just saying bye) on any sign-off — "thanks bye," "I'm good," "no that's it," an explicit request to end, or "don't call again."
 
 ## Tech stack
 
-- **Framework:** Next.js 16 (App Router), React 19, TypeScript
-- **Styling:** Tailwind CSS 4
-- **Agent:** LangGraph (`@langchain/langgraph`) + `@langchain/openai` (`gpt-4o-mini`)
-- **Voice:** ElevenLabs Speech-to-Text (`scribe_v1`) and Text-to-Speech (`eleven_flash_v2_5`)
-- **Audio capture:** browser `MediaRecorder` API
+> Flagging this section as best-effort — I'm reconstructing it from the agent's system prompt and prior notes on the project rather than reading the repo directly, so treat specifics as a starting point to correct rather than ground truth.
+
+- **Next.js / TypeScript** — app shell
+- **Retell** — voice pipeline (speech-to-text, text-to-speech, call orchestration)
+- LLM-driven persona/system prompt (the "unhinged tutor" character above) governs tone and pacing
+- Level-tagged vocabulary/grammar/culture knowledge base feeding the conversation
+
+*(If this repo has moved on from any of the above, tell me and I'll fix it.)*
+
+## Status
+
+Early / actively iterating — recent work has focused on the call UI (push-to-talk, visual "thinking orb," dark theme) rather than the tutoring logic itself.
 
 ## Getting started
-
-### Prerequisites
-
-- Node.js 20+
-- An [OpenAI API key](https://platform.openai.com/api-keys)
-- An [ElevenLabs API key](https://elevenlabs.io/) and a voice ID to use for the tutor
-
-### Setup
 
 ```bash
 git clone https://github.com/mattusuquen/learn-tagalog.git
 cd learn-tagalog
 npm install
-cp .env.local.example .env.local
-```
-
-Fill in `.env.local`:
-
-```bash
-OPENAI_API_KEY=your-api-key-here
-ELEVENLABS_API_KEY=your-elevenlabs-api-key-here
-ELEVENLABS_VOICE_ID=your-elevenlabs-voice-id-here
-```
-
-Then run the dev server:
-
-```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), allow microphone access, and tap the orb to start talking.
+You'll need a Retell API key (and any other provider keys the app expects) in a `.env.local` — see `.env.example` if one exists, or ask the maintainer.
 
-## Project structure
+## Roadmap ideas
 
-```
-app/
-├── api/
-│   ├── chat/route.ts            # LangGraph tutor agent + system prompt
-│   ├── speech-to-text/route.ts  # Audio → text via ElevenLabs Scribe
-│   └── text-to-speech/route.ts  # Text → MP3 via ElevenLabs
-├── layout.tsx                   # Root layout and fonts
-├── page.tsx                     # Voice chat UI and recording logic
-└── globals.css
-```
+- [ ] Expand the vocabulary/grammar knowledge base across more CEFR levels
+- [ ] Persist learner profiles / spaced-repetition scheduling across sessions
+- [ ] More running bits 😄
 
-## Personalizing the tutor
+---
 
-The system prompt includes a **Student profile** section with placeholder values for level, goals, session length, and focus. Fill these in with your own details to tailor the lessons; if they're left as placeholders, the tutor asks about your level and goals at the start of the first session.
-
-## Scripts
-
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start the development server |
-| `npm run build` | Create a production build |
-| `npm run start` | Serve the production build |
-| `npm run lint` | Run ESLint |
-
-## Roadmap
-
-- [ ] Pronunciation scoring on spoken answers
-- [ ] Persist session history so spaced-repetition review carries across sessions
-- [ ] Show-translation toggle for tutor replies
-- [ ] Configurable student profile from the UI
-
-## Notes
-
-- Conversation state lives in the browser only; refreshing the page starts a new session.
-- Voice replies autoplay after each response, so some browsers may require an initial click on the page before audio will play.
+*Built by [Matt Usuquen](https://github.com/mattusuquen).*
