@@ -1,6 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
+import {
+  ConversationProvider,
+  useConversation,
+} from "@elevenlabs/react";
 import { ThinkingOrb, type OrbState } from "thinking-orbs";
 
 type Message = {
@@ -8,145 +12,83 @@ type Message = {
   content: string;
 };
 
-export default function Home() {
+// Overrides the agent's opening line for this session. Requires "First message"
+// overrides to be enabled in the agent's Security settings in the ElevenLabs
+// dashboard, otherwise it is ignored.
+const FIRST_MESSAGE =
+  "Kumusta! Ako si Kuya Tutor. Handa ka na bang mag-aral ng Tagalog ngayon?";
+
+function VoiceChat() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
-
-  async function sendText(text: string) {
-    const nextMessages: Message[] = [...messages, { role: "user", content: text }];
-    setMessages(nextMessages);
-    setLoading(true);
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error ?? "Request failed");
-      }
-
-      setMessages([...nextMessages, { role: "assistant", content: data.text }]);
-      playReply(data.text);
-    } catch (err) {
-      setMessages([
-        ...nextMessages,
-        {
-          role: "assistant",
-          content: `Error: ${err instanceof Error ? err.message : "Something went wrong"}`,
-        },
+  const conversation = useConversation({
+    onMessage: ({ message, source }) => {
+      setMessages((prev) => [
+        ...prev,
+        { role: source === "ai" ? "assistant" : "user", content: message },
       ]);
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+    onError: (message, context) => {
+      console.error("conversation error:", message, context);
+      setVoiceError(
+        `Voice connection error: ${typeof message === "string" ? message : JSON.stringify(message)
+        }`,
+      );
+    },
+    onDisconnect: (details) => {
+      console.error("conversation disconnected:", JSON.stringify(details, null, 2));
+    },
+  });
 
-  async function playReply(text: string) {
-    try {
-      const res = await fetch("/api/text-to-speech", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
+  const { status, isSpeaking, startSession, endSession } = conversation;
+  const connected = status === "connected";
+  const connecting = status === "connecting";
 
-      if (!res.ok) {
-        throw new Error("Text-to-speech request failed");
-      }
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.onended = () => URL.revokeObjectURL(url);
-      await audio.play();
-    } catch (err) {
-      console.error(err);
-      setVoiceError("Couldn't play the voice reply.");
-    }
-  }
-
-  async function startRecording() {
+  async function handleOrbTap() {
     setVoiceError(null);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      chunksRef.current = [];
 
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        stream.getTracks().forEach((track) => track.stop());
-        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
-        await transcribeAndSend(blob);
-      };
-
-      recorder.start();
-      mediaRecorderRef.current = recorder;
-      setRecording(true);
-    } catch (err) {
-      console.error(err);
-      setVoiceError("Couldn't access the microphone.");
+    if (connected || connecting) {
+      await endSession();
+      return;
     }
-  }
 
-  function stopRecording() {
-    mediaRecorderRef.current?.stop();
-    setRecording(false);
-  }
-
-  async function transcribeAndSend(blob: Blob) {
-    setTranscribing(true);
     try {
-      const formData = new FormData();
-      formData.append("audio", blob, "recording.webm");
+      // The SDK prompts for mic access and negotiates the WebRTC connection.
+      await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const res = await fetch("/api/speech-to-text", {
-        method: "POST",
-        body: formData,
-      });
+      // Fetch a short-lived token from our server, which holds the API key and
+      // agent ID — the browser never sees either.
+      const res = await fetch("/api/token");
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error ?? "Transcription failed");
+      if (!res.ok || !data.token) {
+        throw new Error(data.error ?? "Couldn't get a conversation token");
       }
 
-      const text = (data.text ?? "").trim();
-      if (text) {
-        await sendText(text);
-      }
+      await startSession({
+        conversationToken: data.token,
+        connectionType: "webrtc",
+        overrides: {
+          agent: {
+            firstMessage: FIRST_MESSAGE,
+          },
+        },
+      });
     } catch (err) {
       console.error(err);
-      setVoiceError("Couldn't transcribe audio.");
-    } finally {
-      setTranscribing(false);
+      setVoiceError("Couldn't start the conversation. Check microphone access.");
     }
   }
 
-  function handleOrbTap() {
-    if (recording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
-  }
-
-  const orbState: OrbState = recording
-    ? "listening"
-    : transcribing
-      ? "searching"
-      : loading
+  // Orb reflects the live agent state: connecting → searching, agent talking →
+  // solving, listening for the student → listening, otherwise idle.
+  const orbState: OrbState = connecting
+    ? "searching"
+    : connected
+      ? isSpeaking
         ? "solving"
-        : "breathing";
+        : "listening"
+      : "breathing";
 
   return (
     // Page wrapper — dark color scheme with a blue accent, centers the chat column horizontally
@@ -182,40 +124,35 @@ export default function Home() {
               </span>
             </div>
           ))}
-          {/* Transient "typing" indicator shown while awaiting the API response */}
-          {loading && (
-            <div className="text-left">
-              <span className="inline-flex items-center gap-1 rounded-2xl bg-[#1c1f24] px-4 py-3">
-                <span className="h-2 w-2 animate-bounce rounded-full bg-gray-500" style={{ animationDelay: "0ms" }} />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-gray-500" style={{ animationDelay: "150ms" }} />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-gray-500" style={{ animationDelay: "300ms" }} />
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Composer — Show Translation and End Chat are decorative only; the orb is the real control */}
+        {/* Composer — the orb is the single control: tap to connect/disconnect the agent */}
         <div className="grid grid-cols-3 items-center gap-2 px-4 pb-8 pt-4">
-          
-
           <div className="col-start-2 flex flex-col items-center justify-self-center gap-2">
             <button
               type="button"
               onClick={handleOrbTap}
-              disabled={loading || transcribing}
-              aria-label={recording ? "Stop recording" : "Tap to speak"}
+              aria-label={connected ? "End conversation" : "Tap to speak"}
               className="flex h-20 w-20 cursor-pointer items-center justify-center transition disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ThinkingOrb state={orbState} size={64} theme="dark" color="#60a5fa" />
             </button>
-            <span className="text-sm text-gray-400">Tap to speak</span>
+            <span className="text-sm text-gray-400">
+              {connected ? "Tap to end" : connecting ? "Connecting…" : "Tap to speak"}
+            </span>
           </div>
-
-          
         </div>
         {/* Short inline error for mic/voice failures */}
         {voiceError && <div className="px-4 pb-4 text-center text-sm text-red-400">{voiceError}</div>}
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <ConversationProvider>
+      <VoiceChat />
+    </ConversationProvider>
   );
 }
