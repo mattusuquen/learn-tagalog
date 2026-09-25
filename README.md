@@ -2,7 +2,7 @@
 
 A voice-first AI tutor for learning conversational Tagalog. Tap the orb, speak (in English, Tagalog, or Taglish), and **Kuya Tutor** answers out loud, walking you through vocabulary, grammar, pronunciation, and cultural context one short exchange at a time.
 
-Built with Next.js, LangGraph, OpenAI, and ElevenLabs.
+Built with Next.js and an [ElevenLabs Conversational AI agent](https://elevenlabs.io/docs/conversational-ai/overview).
 
 ## How it works
 
@@ -10,23 +10,27 @@ Built with Next.js, LangGraph, OpenAI, and ElevenLabs.
  🎙️ You speak
    │
    ▼
- /api/speech-to-text   → ElevenLabs Scribe transcribes your audio
+ ElevenLabs Conversational AI agent
+   (speech-to-text → LLM → text-to-speech, all in one real-time session)
    │
    ▼
- /api/chat             → LangGraph agent (gpt-4o-mini) replies as Kuya Tutor
-   │
-   ▼
- /api/text-to-speech   → ElevenLabs Flash v2.5 speaks the reply
-   │
-   ▼
- 🔊 You hear the answer (and see it in the transcript)
+ 🔊 You hear the answer (and see the transcript stream in)
 ```
 
-The UI is a single chat column with an animated orb ([`thinking-orbs`](https://www.npmjs.com/package/thinking-orbs)) that reflects what the app is doing: **listening** while recording, **searching** while transcribing, **solving** while the tutor thinks, and **breathing** when idle.
+The browser connects to the agent over WebRTC using the
+[`@elevenlabs/react`](https://www.npmjs.com/package/@elevenlabs/react)
+`useConversation` hook. A tiny server route (`/api/token`) mints a short-lived
+conversation token so the ElevenLabs API key and agent ID never reach the
+browser — there's no server-side STT/LLM/TTS pipeline to run. Speech
+recognition, the tutor's responses, and voice synthesis are all handled by the
+agent you configure in the ElevenLabs dashboard.
+
+The UI is a single chat column with an animated orb ([`thinking-orbs`](https://www.npmjs.com/package/thinking-orbs)) that reflects the live session: **searching** while connecting, **listening** while the agent waits for you, **solving** while the tutor speaks, and **breathing** when idle.
 
 ## The tutor
 
-Kuya Tutor's behavior lives in the system prompt in [`app/api/chat/route.ts`](app/api/chat/route.ts). It is designed to:
+Kuya Tutor's behavior — its system prompt, LLM, and voice — is configured on the
+ElevenLabs agent, not in this repo. The prompt is designed to:
 
 - Teach everyday Manila Tagalog as it's actually spoken, including natural Taglish, and flag formal vs. casual usage
 - Give every new word with a pronunciation guide (stressed syllable in caps, e.g. *sa-LA-mat*), glottal-stop notes where meaning changes, and an English gloss
@@ -34,7 +38,7 @@ Kuya Tutor's behavior lives in the system prompt in [`app/api/chat/route.ts`](ap
 - Follow a session structure: warm-up → spaced-repetition review → new material → practice → wrap-up
 - Correct mistakes by showing the fix first, then briefly explaining why, and nudge you to answer in Tagalog
 
-Built-in commands you can say or type:
+Built-in commands you can say:
 
 | Command | What it does |
 | --- | --- |
@@ -46,17 +50,25 @@ Built-in commands you can say or type:
 
 - **Framework:** Next.js 16 (App Router), React 19, TypeScript
 - **Styling:** Tailwind CSS 4
-- **Agent:** LangGraph (`@langchain/langgraph`) + `@langchain/openai` (`gpt-4o-mini`)
-- **Voice:** ElevenLabs Speech-to-Text (`scribe_v1`) and Text-to-Speech (`eleven_flash_v2_5`)
-- **Audio capture:** browser `MediaRecorder` API
+- **Voice + agent:** ElevenLabs Conversational AI via `@elevenlabs/react` (`useConversation`)
+- **Audio:** browser WebRTC (mic capture and playback handled by the SDK)
 
 ## Getting started
 
 ### Prerequisites
 
 - Node.js 20+
-- An [OpenAI API key](https://platform.openai.com/api-keys)
-- An [ElevenLabs API key](https://elevenlabs.io/) and a voice ID to use for the tutor
+- An [ElevenLabs account](https://elevenlabs.io/) with a Conversational AI agent, its **Agent ID**, and an **API key**
+
+### Set up the agent
+
+1. In the ElevenLabs dashboard, create a **Conversational AI agent**.
+2. Set its system prompt (see [The tutor](#the-tutor)), pick the LLM, and choose a Tagalog-capable voice.
+3. Copy the **Agent ID** from the agent's settings and an **API key** from your account.
+
+The app is wired for a **private** agent: the browser fetches a short-lived
+conversation token from `/api/token`, which uses your API key server-side. The
+key and agent ID stay on the server and are never exposed to the client.
 
 ### Setup
 
@@ -70,9 +82,8 @@ cp .env.local.example .env.local
 Fill in `.env.local`:
 
 ```bash
-OPENAI_API_KEY=your-api-key-here
 ELEVENLABS_API_KEY=your-elevenlabs-api-key-here
-ELEVENLABS_VOICE_ID=your-elevenlabs-voice-id-here
+ELEVENLABS_AGENT_ID=your-elevenlabs-agent-id-here
 ```
 
 Then run the dev server:
@@ -88,17 +99,17 @@ Open [http://localhost:3000](http://localhost:3000), allow microphone access, an
 ```
 app/
 ├── api/
-│   ├── chat/route.ts            # LangGraph tutor agent + system prompt
-│   ├── speech-to-text/route.ts  # Audio → text via ElevenLabs Scribe
-│   └── text-to-speech/route.ts  # Text → MP3 via ElevenLabs
-├── layout.tsx                   # Root layout and fonts
-├── page.tsx                     # Voice chat UI and recording logic
+│   └── token/route.ts   # Mints a short-lived conversation token (keeps API key server-side)
+├── layout.tsx           # Root layout and fonts
+├── page.tsx             # Voice chat UI + ElevenLabs agent session (useConversation)
 └── globals.css
 ```
 
 ## Personalizing the tutor
 
-The system prompt includes a **Student profile** section with placeholder values for level, goals, session length, and focus. Fill these in with your own details to tailor the lessons; if they're left as placeholders, the tutor asks about your level and goals at the start of the first session.
+Because the tutor lives on the ElevenLabs agent, you personalize it in the
+dashboard: edit the system prompt's **Student profile** (level, goals, session
+length, focus), swap the voice, or change the LLM — no code changes needed.
 
 ## Scripts
 
@@ -118,5 +129,6 @@ The system prompt includes a **Student profile** section with placeholder values
 
 ## Notes
 
-- Conversation state lives in the browser only; refreshing the page starts a new session.
-- Voice replies autoplay after each response, so some browsers may require an initial click on the page before audio will play.
+- The transcript lives in the browser only; refreshing the page starts a new session.
+- The API key and agent ID stay server-side; the browser only receives a short-lived conversation token from `/api/token`.
+- Some browsers require a user gesture before audio will play — tapping the orb to start satisfies that.
