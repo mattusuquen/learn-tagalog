@@ -12,6 +12,12 @@ type Message = {
   content: string;
 };
 
+// Overrides the agent's opening line for this session. Requires "First message"
+// overrides to be enabled in the agent's Security settings in the ElevenLabs
+// dashboard, otherwise it is ignored.
+const FIRST_MESSAGE =
+  "Kumusta! Ako si Kuya Tutor. Handa ka na bang mag-aral ng Tagalog ngayon?";
+
 function VoiceChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -26,8 +32,7 @@ function VoiceChat() {
     onError: (message, context) => {
       console.error("conversation error:", message, context);
       setVoiceError(
-        `Voice connection error: ${
-          typeof message === "string" ? message : JSON.stringify(message)
+        `Voice connection error: ${typeof message === "string" ? message : JSON.stringify(message)
         }`,
       );
     },
@@ -60,7 +65,15 @@ function VoiceChat() {
         throw new Error(data.error ?? "Couldn't get a conversation token");
       }
 
-      await startSession({ conversationToken: data.token, connectionType: "webrtc" });
+      await startSession({
+        conversationToken: data.token,
+        connectionType: "webrtc",
+        overrides: {
+          agent: {
+            firstMessage: FIRST_MESSAGE,
+          },
+        },
+      });
     } catch (err) {
       console.error(err);
       setVoiceError("Couldn't start the conversation. Check microphone access.");
