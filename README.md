@@ -35,10 +35,9 @@ The agent explicitly ends the call (rather than just saying bye) on any sign-off
 
 ## Tech stack
 
-> Flagging this section as best-effort — I'm reconstructing it from the agent's system prompt and prior notes on the project rather than reading the repo directly, so treat specifics as a starting point to correct rather than ground truth.
 
 - **Next.js / TypeScript** — app shell
-- **Retell** — voice pipeline (speech-to-text, text-to-speech, call orchestration)
+- **ElevenLabs** — voice pipeline (speech-to-text, text-to-speech, call orchestration)
 - LLM-driven persona/system prompt (the "unhinged tutor" character above) governs tone and pacing
 - Level-tagged vocabulary/grammar/culture knowledge base feeding the conversation
 
