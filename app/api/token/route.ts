@@ -1,8 +1,19 @@
+import { createClient } from "@/utils/supabase/server";
+
 export const runtime = "nodejs";
 
 // Mints a short-lived WebRTC conversation token for a private ElevenLabs agent.
 // The API key stays server-side; the browser only ever sees the token.
 export async function GET() {
+  // Only authenticated users may mint a token.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const agentId = process.env.ELEVENLABS_AGENT_ID;
 
