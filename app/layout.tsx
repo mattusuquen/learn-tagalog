@@ -8,8 +8,8 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Learn Tagalog Chat",
-  description: "A simple chat interface powered by Claude.",
+  title: "Learn Tagalog",
+  description: "A voice-based Tagalog tutor.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
