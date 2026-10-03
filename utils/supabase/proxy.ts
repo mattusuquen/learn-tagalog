@@ -37,7 +37,12 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isPublic =
-    pathname.startsWith("/login") || pathname.startsWith("/auth");
+    // Exact match: the landing page is public, but "/" is a prefix of every
+    // path, so startsWith("/") would make the whole app public. "/login" and
+    // "/auth" are real prefixes, so startsWith is safe for them.
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/auth");
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
