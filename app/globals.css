@@ -1,21 +1,16 @@
 @import "tailwindcss";
 
+/* Light-only palette tuned to the Luma mock. No prefers-color-scheme block —
+   the design is a single light theme. */
 :root {
-  --background: hwb(0 100% 0%);
-  --foreground: #a3a3a3;
+  --background: #f7f8f6;
+  --foreground: #1a1a1a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-google-sans);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #a3a3a3;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-open-sans);
 }
 
 body {
