@@ -124,12 +124,42 @@ length, focus), swap the voice, or change the LLM — no code changes needed.
 | `npm run start` | Serve the production build |
 | `npm run lint` | Run ESLint |
 
-## Roadmap ideas
+## Roadmap
 
-- [ ] Expand the vocabulary/grammar knowledge base across more CEFR levels
-- [ ] Persist learner profiles / spaced-repetition scheduling across sessions
-- [ ] More running bits 😄
+### Phase 0: Foundations
+- [ ] Validate Tagalog pronunciation scoring (spike)
+- [ ] Test voice agent quality, latency, and tool calls
+- [ ] Supabase schema, auth, and row-level security
 
+### Phase 1: Learner Model
+- [ ] Curriculum graph (first ~100 items, 5-8 scenarios)
+- [ ] Tap-based onboarding and placement
+- [ ] FSRS-based review scheduling
+- [ ] Static drills that update learner state
+
+### Phase 2: Voice Sessions
+- [ ] Session planner that builds a brief from learner state
+- [ ] Voice agent with grounded lookup and evidence-reporting tools
+- [ ] Expo voice screen: waveform, mute/unmute, avatar
+- [ ] Guaranteed-win first session (shadowing)
+
+### Phase 3: Feedback Loop
+- [ ] Post-session evidence processing
+- [ ] Phoneme-level pronunciation feedback
+- [ ] Session summaries, struggle deck, and mini-quizzes
+- [ ] Planner uses recurring errors to shape the next session
+
+### Phase 4: Polish and Launch
+- [ ] Lip-synced avatar
+- [ ] Coach intensity modes (gentle / spicy / brutal)
+- [ ] RevenueCat paywall
+- [ ] Register, affix, and Taglish mini-lessons
+
+### Later Ideas
+- [ ] Native speaker recordings as pronunciation references
+- [ ] Shareable clip moments
+- [ ] Regional variation and slang packs
+- [ ] Swappable voice and STT providers
 ---
 
 - The transcript lives in the browser only; refreshing the page starts a new session.
