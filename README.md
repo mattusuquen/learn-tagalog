@@ -1,8 +1,6 @@
 # learn-tagalog 🇵🇭
 
-A voice-based Tagalog tutor that talks like your titita, not your textbook.
-
-Built with Next.js and an [ElevenLabs Conversational AI agent](https://elevenlabs.io/docs/conversational-ai/overview).
+A voice-based Tagalog tutor built with Next.js and an [ElevenLabs Conversational AI agent](https://elevenlabs.io/docs/conversational-ai/overview).
 
 ## What makes this different
 
