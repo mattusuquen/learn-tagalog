@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Open_Sans } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
+// Open Sans is the app's UI font; shadcn tokens read it via --font-sans.
 const openSans = Open_Sans({
-  variable: "--font-open-sans",
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${openSans.variable} h-full antialiased`}>
+    <html lang="en" className={cn("h-full antialiased font-sans", openSans.variable)}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
