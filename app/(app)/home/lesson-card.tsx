@@ -11,24 +11,6 @@ import { createConversation, saveMessage } from "@/app/actions/conversations";
 const FIRST_MESSAGE =
   "Hi, I am your personal Tagalog coach. Let's start off by understanding your proficiency. Would you like me to continue in english or switch to tagalog for the lessons?";
 
-// Static, decorative waveform (the volume-reactive version is a deferred feature).
-// A fixed set of bar heights rendered as thin rounded columns.
-const BAR_HEIGHTS = [6, 10, 14, 8, 16, 11, 7, 13, 9, 15, 10, 6, 12, 8, 14, 9];
-
-function Waveform() {
-  return (
-    <div className="flex items-center gap-0.5" aria-hidden>
-      {BAR_HEIGHTS.map((h, i) => (
-        <span
-          key={i}
-          className="w-0.5 rounded-full bg-[#86c7a6]"
-          style={{ height: `${h}px` }}
-        />
-      ))}
-    </div>
-  );
-}
-
 function Card() {
   // Only the latest tutor line is shown in the box (design choice). The full
   // transcript is still persisted turn-by-turn via saveMessage below.
@@ -178,9 +160,6 @@ function Card() {
 
           <div className="min-w-0 flex-1">
             <p className="text-base font-medium text-[#1a1a1a]">{tutorText}</p>
-            <div className="mt-2">
-              <Waveform />
-            </div>
           </div>
 
           <svg
