@@ -130,11 +130,20 @@ export async function getProgressStats(): Promise<ProgressStats> {
   const wordsLearned = words.filter((w) => w.mastery !== "new").length;
   const minutesThisWeek = MINUTES_PER_DAY.slice(-7).reduce((s, d) => s + d.minutes, 0);
 
+  // Cumulative growth curve ending at the current words-learned count. easeOut
+  // gives a plausible "fast start, leveling off" shape; monotonic by construction.
+  const n = MINUTES_PER_DAY.length;
+  const wordsLearnedSeries = MINUTES_PER_DAY.map((d, i) => {
+    const t = (i + 1) / n;
+    return { date: d.date, value: Math.round(wordsLearned * (1 - (1 - t) ** 2)) };
+  });
+
   return tick({
     dayStreak: DAY_STREAK,
     wordsLearned,
     minutesThisWeek,
     wordsMasteredPct: total === 0 ? 0 : Math.round((mastered / total) * 100),
+    wordsLearnedSeries,
     minutesPerDay: MINUTES_PER_DAY,
     masteryBreakdown: breakdown,
     struggleTopics: STRUGGLE_TOPICS,
