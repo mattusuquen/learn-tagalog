@@ -116,6 +116,12 @@ export interface StruggleTopic {
   progress: number;
 }
 
+export interface SeriesPoint {
+  /** ISO date (YYYY-MM-DD). */
+  date: string;
+  value: number;
+}
+
 export interface ActivityDay {
   /** ISO date (YYYY-MM-DD). */
   date: string;
@@ -129,6 +135,8 @@ export interface ProgressStats {
   minutesThisWeek: number;
   /** Replaces the spec's "avg pronunciation score" (no pronunciation feedback). */
   wordsMasteredPct: number;
+  /** Cumulative words learned over the last 30 days, oldest first. */
+  wordsLearnedSeries: SeriesPoint[];
   /** Last 30 days, oldest first. */
   minutesPerDay: DailyMinutes[];
   masteryBreakdown: MasteryBreakdown[];
